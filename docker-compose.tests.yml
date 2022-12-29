@@ -18,13 +18,10 @@ services:
       dac-network:
         ipv4_address: 172.21.0.23
   permissions-api:
-    build:
-      context: ./Permissions-API
-      dockerfile: Dockerfile
+    image: acavalls/ipc-permissions-api:latest
+    container_name: permissions-api-test
     ports:
       - 8081:8081
-    volumes:
-      - ./Permissions-API/src:/app/src
     env_file:
       - ./Permissions-API/.env-tests
     depends_on:
