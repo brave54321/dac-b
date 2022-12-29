@@ -1,0 +1,79 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { GetDACInfo } from '../../application/info/GetDACInfo';
+import { UpdateDACInfo } from '../../application/info/UpdateDACInfo';
+import { FindPolicyById } from '../../application/policies/FindPolicyById';
+import { GetAllPolicies } from '../../application/policies/GetAllPolicies';
+import { UpdatePolicyById } from '../../application/policies/UpdatePolicyById';
+import { RejectAccessRequest } from '../../application/requests/RejectAccessRequest';
+import { AcceptAccessRequest } from '../../application/requests/AcceptAccessRequest';
+import { CreateAccessRequest } from '../../application/requests/CreateAccessRequest';
+import { GetRequestsByStatus } from '../../application/requests/GetRequestsByStatus';
+import { GetRequestById } from '../../application/requests/GetRequestById';
+import { RequestsDacController } from './requests/dac/requests.controller';
+import { RequestsUserController } from './requests/user/requests.controller';
+import { PoliciesDacController } from './policies/dac/policies.controller';
+import { PoliciesUserController } from './policies/user/policies.controller';
+import { InfoController } from './info/info.controller';
+import { IInfoRepositoryToken } from '../../domain/ports/repositories/info/info.interfaces';
+import { InfoRepository } from '../repositories/info/info.repository';
+import { configToken } from '../../infrastructure/config/env.config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Dac, DacSchema } from '../entities/dac.entity';
+import { KeycloakConnectModule } from 'nest-keycloak-connect';
+import { IPoliciesRepositoryToken } from 'src/domain/ports/repositories/policies/policies.interfaces';
+import { PoliciesRepository } from '../repositories/policies/policies.repository';
+import { Policy, PolicySchema } from '../entities/policy.entity';
+import { RequestsRepository } from '../repositories/requests/requests.repository';
+import { IRequestsRepositoryToken } from 'src/domain/ports/repositories/requests/requests.interfaces';
+import { RequestSchema } from '../entities/request.entity';
+
+@Module({
+  imports: [
+    ConfigModule,
+    MongooseModule.forFeature([
+      {
+        name: Dac.name,
+        schema: DacSchema,
+      },
+      {
+        name: Policy.name,
+        schema: PolicySchema,
+      },
+      {
+        name: Request.name,
+        schema: RequestSchema,
+      }
+    ]),
+    KeycloakConnectModule.register({
+      authServerUrl: 'http://172.21.0.12:8080/auth',
+      realm: 'IPC',
+      clientId: 'dac-portal-api',
+      secret: 'cda4f15b-c430-4690-bb2e-c89150c424d4',
+    }),
+  ],
+  providers: [
+    GetDACInfo, 
+    UpdateDACInfo, 
+    FindPolicyById,
+    UpdatePolicyById,
+    GetAllPolicies,
+    RejectAccessRequest,
+    AcceptAccessRequest,
+    CreateAccessRequest,
+    GetRequestsByStatus,
+    GetRequestById,
+    { provide: IInfoRepositoryToken, useClass: InfoRepository },
+    { provide: IPoliciesRepositoryToken, useClass: PoliciesRepository },
+    { provide: IRequestsRepositoryToken, useClass: RequestsRepository },
+    { provide: configToken, useClass: ConfigModule },
+  ],
+  controllers: [
+    InfoController, 
+    RequestsUserController,
+    RequestsDacController, 
+    PoliciesUserController,
+    PoliciesDacController
+  ],
+})
+export class ControllersModule {}
