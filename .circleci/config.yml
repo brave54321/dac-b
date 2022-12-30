@@ -5,6 +5,17 @@ workflows:
     jobs:
       - run-tests:
           name: test-dac
+      - hold:
+          type: approval
+          requires:
+            - test-dac
+      - publish:
+          requires:
+            - test-dac
+            - hold
+          filters:
+            branches:
+              only: master
 jobs:
   run-tests:
     machine:
@@ -57,3 +68,21 @@ jobs:
             docker-compose -f docker-compose.tests.yml logs
             docker-compose -f docker-compose.tests.yml exec dac-portal-backend npm run test
             docker-compose -f docker-compose.tests.yml exec dac-portal-backend npm run test:e2e
+  publish:
+    docker:
+      - image: cimg/node:16.4.1
+        auth:
+          username: $DOCKER_USER
+          password: $DOCKER_PASS
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.13
+          docker_layer_caching: false
+      - run: 
+          command: | 
+            TAG=0.1.${CIRCLE_BUILD_NUM} 
+            docker build -f Dockerfile.production -t acavalls/ipc-dac-portal-backend:$TAG -t acavalls/ipc-dac-portal-backend:latest .
+            echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+            docker push acavalls/ipc-dac-portal-backend:$TAG
+            docker push acavalls/ipc-dac-portal-backend:latest
